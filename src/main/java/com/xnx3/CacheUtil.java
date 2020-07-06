@@ -24,7 +24,6 @@ public class CacheUtil {
      * 初始化Redis连接池
      */
     static {
-		System.out.println(CacheUtil.class.getResource("/").getPath());
 		String path = CacheUtil.class.getResource("/").getPath();	// classes 根路径
 		Properties properties = new Properties();
         try {
@@ -68,13 +67,14 @@ public class CacheUtil {
                 config.setMaxWaitMillis(RedisUtil.MAX_WAIT);
                 config.setTestOnBorrow(RedisUtil.TEST_ON_BORROW);
                 RedisUtil.jedisPool = new JedisPool(config, RedisUtil.host, RedisUtil.port, RedisUtil.timeout, RedisUtil.password);
-                System.out.println(RedisUtil.host+","+RedisUtil.port+","+RedisUtil.timeout);
+                System.out.println("cache use redis : "+RedisUtil.host+","+RedisUtil.port+","+RedisUtil.timeout);
             } catch (Exception e) {
                 e.printStackTrace();
             }
     	}else{
     		//不使用redis
     		useRedis = false;
+    		System.out.println("cache use java map ");
     	}
     }
 	
@@ -141,7 +141,7 @@ public class CacheUtil {
 	
 	/**
 	 * 获取缓存信息
-	 * @param key 
+	 * @param key 缓存的key
 	 * @return 如果缓存中没有，会返回 null
 	 */
 	public static Object get(String key){
