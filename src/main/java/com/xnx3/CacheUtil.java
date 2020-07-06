@@ -1,13 +1,7 @@
 package com.xnx3;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.Properties;
 import com.xnx3.cache.JavaUtil;
 import com.xnx3.cache.RedisUtil;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 
 /**
  * 缓存工具。
@@ -20,63 +14,7 @@ public class CacheUtil {
 	public static final int EXPIRETIME = 7*24*60*60;	//7天，默认过期时间
 	public static boolean useRedis = false;	//默认不使用redis缓存，而是使用Java 的 map 缓存。 false为不使用redis
 	
-    /**
-     * 初始化Redis连接池
-     */
-    static {
-		String path = CacheUtil.class.getResource("/").getPath();	// classes 根路径
-		Properties properties = new Properties();
-        try {
-        	properties.load(new FileInputStream(path+"application.properties"));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-        if(!properties.isEmpty()){
-        	//配置文件若存在，才会进行下面操作
-        	RedisUtil.host = properties.getProperty("spring.redis.host");
-        	
-            String portStr = properties.getProperty("spring.redis.port");
-        	if(portStr != null && portStr.length() > 0){
-        		RedisUtil.port = Integer.parseInt(portStr);
-        		if(RedisUtil.port == -1){
-        			RedisUtil.port = 6379;
-        		}
-        	}
-        	String pwd = properties.getProperty("spring.redis.password");
-        	if(pwd != null && pwd.length() > 0){
-        		RedisUtil.password = pwd;
-        	}
-        	String timeoutStr = properties.getProperty("spring.redis.timeout");
-        	if(timeoutStr != null && timeoutStr.length() > 0){
-        		RedisUtil.timeout = Integer.parseInt(timeoutStr);
-        	}
-    	}else{
-    		RedisUtil.host = null;	//标注为不使用redis
-    	}
-    	
-    	if(RedisUtil.host != null){
-    		//只要配置了host，那便认为启用了redis
-    		useRedis = true;
-    		try {
-                JedisPoolConfig config = new JedisPoolConfig();
-                config.setMaxTotal(RedisUtil.MAX_ACTIVE);
-                config.setMaxIdle(RedisUtil.MAX_IDLE);
-                config.setMaxWaitMillis(RedisUtil.MAX_WAIT);
-                config.setTestOnBorrow(RedisUtil.TEST_ON_BORROW);
-                RedisUtil.jedisPool = new JedisPool(config, RedisUtil.host, RedisUtil.port, RedisUtil.timeout, RedisUtil.password);
-                System.out.println("cache use redis : "+RedisUtil.host+","+RedisUtil.port+","+RedisUtil.timeout);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-    	}else{
-    		//不使用redis
-    		useRedis = false;
-    		System.out.println("cache use java map ");
-    	}
-    }
+  
 	
 	/**
 	 * 设置缓存
@@ -169,10 +107,11 @@ public class CacheUtil {
 	}
 	
 	 /**
-     * 当前是否使用redis
+     * 当前是否使用redis。如果使用的是redis，那么可以直接通过 {@link RedisUtil} 来使用redis
      * @return true:使用redis  false:不使用redis
      */
 	public static boolean isUseRedis(){
-		return RedisUtil.isUse();
+		return useRedis;
 	}
+	
 }

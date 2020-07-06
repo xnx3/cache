@@ -2,11 +2,19 @@ package com.xnx3.cache;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Properties;
+
+import com.xnx3.CacheUtil;
+
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 /**
  * redis工具类
@@ -40,6 +48,76 @@ public class RedisUtil {
     public static boolean TEST_ON_BORROW = true;
 
     public static JedisPool jedisPool = null;
+    
+    /**
+     * 初始化Redis连接池
+     */
+    static {
+		String path = RedisUtil.class.getResource("/").getPath();	// classes 根路径
+		Properties properties = new Properties();
+        try {
+        	properties.load(new FileInputStream(path+"application.properties"));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+        if(!properties.isEmpty()){
+        	//配置文件若存在，才会进行下面操作
+        	RedisUtil.host = properties.getProperty("spring.redis.host");
+        	
+            String portStr = properties.getProperty("spring.redis.port");
+        	if(portStr != null && portStr.length() > 0){
+        		RedisUtil.port = Integer.parseInt(portStr);
+        		if(RedisUtil.port == -1){
+        			RedisUtil.port = 6379;
+        		}
+        	}
+        	String pwd = properties.getProperty("spring.redis.password");
+        	if(pwd != null && pwd.length() > 0){
+        		RedisUtil.password = pwd;
+        	}
+        	String timeoutStr = properties.getProperty("spring.redis.timeout");
+        	if(timeoutStr != null && timeoutStr.length() > 0){
+        		RedisUtil.timeout = Integer.parseInt(timeoutStr);
+        	}
+    	}else{
+    		RedisUtil.host = null;	//标注为不使用redis
+    	}
+    	
+    	if(RedisUtil.host != null){
+    		//只要配置了host，那便认为启用了redis
+    		createJedisPool(RedisUtil.host, RedisUtil.port, RedisUtil.password);
+    	}else{
+    		//不使用redis
+    		System.out.println("com.xnx3.CacheUtil use java map ");
+    	}
+    }
+    
+    /**
+     * 创建 JedisPool
+     * @param host redis的host，如 127.0.0.1
+     * @param port redis的port端口，如 6379，必须传入端口号
+     * @param password redis的链接密码，如果redis没有密码，要传入 null
+     */
+    public static void createJedisPool(String host, int port, String password){
+    	//如果host、port有值，才会创建
+    	if(host != null && host.length() > 0 && port > 0){
+    		try {
+                JedisPoolConfig config = new JedisPoolConfig();
+                config.setMaxTotal(RedisUtil.MAX_ACTIVE);
+                config.setMaxIdle(RedisUtil.MAX_IDLE);
+                config.setMaxWaitMillis(RedisUtil.MAX_WAIT);
+                config.setTestOnBorrow(RedisUtil.TEST_ON_BORROW);
+                jedisPool = new JedisPool(config, host, port, RedisUtil.timeout, password);
+                System.out.println("com.xnx3.CacheUtil use redis : "+host+","+port+","+RedisUtil.timeout);
+                CacheUtil.useRedis = true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+    	}
+    }
    
     /**
      * 当前是否使用redis
@@ -50,8 +128,9 @@ public class RedisUtil {
     }
     
     /**
-     * 获取Jedis实例
-     * @return
+     * 获取Jedis实例。
+     * 注意，用完后要执行 {@link #closeJedis(Jedis)} 关闭
+     * @return {@link Jedis}
      */
     public synchronized static Jedis getJedis() {
         try {
@@ -69,14 +148,23 @@ public class RedisUtil {
 
     /**
      * 释放jedis资源
-     * @param jedis
+     * @param jedis 要关闭的jredis
+     * @deprecated 请使用 {@link #closeJedis(Jedis)}
      */
     public static void returnResource(final Jedis jedis) {
+    	closeJedis(jedis);
+    }
+
+    /**
+     * 关闭jedis
+     * @param jedis 要关闭的jredis
+     */
+    public static void closeJedis(Jedis jedis) {
         if (jedis != null) {
             jedis.close();
         }
     }
-
+    
     /**
      * 获取redis键值-object
      * 

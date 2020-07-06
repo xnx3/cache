@@ -4,6 +4,7 @@
 ````
 //写
 CacheUtil.set(key, value);
+CacheUtil.set(key, value, timeout);
 
 //读
 CacheUtil.get(Key);
@@ -22,3 +23,16 @@ spring.redis.port=6379
 ````
 
 如果不使用redis，只是使用Java Map 进行缓存，那么不需要任何配置。
+
+
+# 在其他java项目中使用
+加入 xnx3-cache-1.0.jar
+即可直接使用 Java 本身进行的缓存。
+
+### 使用 redis 缓存
+````
+//设置redis参数，即可直接使用
+RedisUtil.createJedisPool(String host, int port, String password);
+CacheUtil.set(key, value);
+......
+````
