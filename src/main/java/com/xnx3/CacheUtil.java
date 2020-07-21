@@ -14,7 +14,10 @@ public class CacheUtil {
 	public static final int EXPIRETIME = 7*24*60*60;	//7天，默认过期时间
 	public static boolean useRedis = false;	//默认不使用redis缓存，而是使用Java 的 map 缓存。 false为不使用redis
 	
-  
+	static{
+		//初始化 redis
+		new RedisUtil();
+	}
 	
 	/**
 	 * 设置缓存
