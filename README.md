@@ -15,6 +15,8 @@
 CacheUtil.set(key, value);  
 CacheUtil.set(key, value, timeout);  
 
+其中,timeout为当前key-value的过期时间，单位是秒。比如设定为2，则超过2秒后没使用，会自动删除调。
+
 #### 读
 CacheUtil.get(Key);
 
